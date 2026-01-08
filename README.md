@@ -156,10 +156,6 @@ For issues, questions, or feature requests:
 - Open an issue on GitHub
 - Check existing issues for solutions
 
-## 📄 License
-
-[Specify your license here]
-
 ## 🙏 Credits
 
 Built for the MeshCore mesh networking community.
