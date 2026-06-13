@@ -35,6 +35,7 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   // App version is imported from constants/app_version.dart
+  static const double _tabletBreakpoint = 600;
   
   final LocationService _locationService = LocationService();
   final MapController _mapController = MapController();
@@ -82,6 +83,10 @@ class _MapScreenState extends State<MapScreen> {
   
   // Map rotation lock
   bool _lockRotationNorth = false;
+
+  bool _isTabletWidth(BuildContext context) {
+    return MediaQuery.sizeOf(context).shortestSide >= _tabletBreakpoint;
+  }
 
   @override
   void initState() {
@@ -771,6 +776,17 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildControlPanel() {
+    if (_isTabletWidth(context)) {
+      return Positioned(
+        top: 16,
+        left: 16,
+        width: (MediaQuery.sizeOf(context).width - 32)
+            .clamp(420.0, 640.0)
+            .toDouble(),
+        child: _buildTabletControlPanel(),
+      );
+    }
+
     return Positioned(
       top: 16,
       left: 16,
@@ -896,6 +912,126 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletControlPanel() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(
+                    _loraConnected
+                        ? Icons.bluetooth_connected
+                        : Icons.bluetooth_disabled,
+                    size: 16,
+                    color: _loraConnected ? Colors.green : Colors.grey,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      _loraConnected
+                          ? (_connectionType == ConnectionType.usb ? 'USB' : 'BT')
+                          : 'No LoRa',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _loraConnected ? Colors.green : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  if (_loraConnected && _batteryPercent != null) ...[
+                    const SizedBox(width: 6),
+                    Icon(
+                      _getBatteryIcon(_batteryPercent!),
+                      size: 14,
+                      color: _getBatteryColor(_batteryPercent!),
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$_batteryPercent%',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _getBatteryColor(_batteryPercent!),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 12),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      'Samples: $_sampleCount',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_loraConnected)
+                  TextButton(
+                    onPressed: _showConnectionDialog,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                    ),
+                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
+                  ),
+                if (_loraConnected)
+                  IconButton(
+                    icon: const Icon(Icons.send, size: 20),
+                    onPressed: _manualPing,
+                    tooltip: 'Manual Ping',
+                    color: Colors.blue,
+                  ),
+                PopupMenuButton<String>(
+                  tooltip: 'More actions',
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'export':
+                        _exportData();
+                        break;
+                      case 'import':
+                        _importData();
+                        break;
+                      case 'clear':
+                        _clearData();
+                        break;
+                      case 'disconnect':
+                        _disconnectLoRa();
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'export', child: Text('Export')),
+                    const PopupMenuItem(value: 'import', child: Text('Import')),
+                    const PopupMenuItem(value: 'clear', child: Text('Clear Map')),
+                    if (_loraConnected)
+                      const PopupMenuItem(
+                        value: 'disconnect',
+                        child: Text('Disconnect'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
